@@ -66,6 +66,9 @@ void Camera::updateRotation(double xPos, double yPos)
 
         previousMousePos.x = xPos;
         previousMousePos.y = yPos;
+    } else {
+        previousMousePos.x = xPos;
+        previousMousePos.y = yPos;
     }
 }
 

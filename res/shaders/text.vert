@@ -1,14 +1,14 @@
-#version 330 core
+#version 460 core
 
-layout (location = 0) in vec3 pos;
-layout (location = 1) in vec2 uv;
+layout (location = 0) in vec3 inPos;
+layout (location = 1) in vec2 inUV;
+
+out vec2 outUV;
 
 uniform mat4 projection;
 
-out vec2 texUV;
-
 void main()
 {
-    gl_Position = projection * vec4(pos.xy, 0.0, 1.0);
-    texUV = uv;
+    gl_Position = projection * vec4(inPos.xy, 0.0, 1.0);
+    outUV = inUV;
 }

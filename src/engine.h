@@ -11,8 +11,8 @@
 #include <core/logger.h>
 #include <core/math.h>
 
-#include <renderer/renderer.h>
-#include <renderer/model.h>
+#include <render/renderer.h>
+#include <render/model.h>
 
 class Engine
 {

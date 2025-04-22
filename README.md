@@ -1,8 +1,8 @@
-# OpenGL Renderer
+# Empty OpenGL Renderer
 
 * Renderer that i created following [LearnOpenGL](https://learnopengl.com) to learn myself OpenGL.
 
-![Sponza](screenshots/screenshot.png)
+![Sponza](screenshots/sponza.png)
 
 ## Build
 
@@ -20,6 +20,6 @@ Build and run in debug:
 ```
 
 # Features
-* Model loading
+* Model loading using Assimp library
 * Phong lighting
-* Freetype text rendering
+* Text rendering using Freetype library

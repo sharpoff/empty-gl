@@ -4,7 +4,7 @@ void Engine::init(std::string title, float width, float height)
 {
     // glfw initialization and configure
     if (glfwInit() != GLFW_TRUE) {
-        Logger::print("Failed to initialize GLFW", LOG_ERROR);
+        Logger::print(LOG_ERROR, "Failed to initialize GLFW");
         std::exit(-1);
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -17,7 +17,7 @@ void Engine::init(std::string title, float width, float height)
     window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
     if (window == NULL)
     {
-        Logger::print("Failed to create GLFW window", LOG_ERROR);
+        Logger::print(LOG_ERROR, "Failed to create GLFW window");
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
@@ -30,7 +30,7 @@ void Engine::init(std::string title, float width, float height)
     GLenum err = glewInit();
     if (GLEW_OK != err)
     {
-        Logger::print("Failed to initialize GLEW", LOG_ERROR);
+        Logger::print(LOG_ERROR, "Failed to initialize GLEW");
         exit(EXIT_FAILURE);
     }
 
@@ -59,6 +59,8 @@ void Engine::init(std::string title, float width, float height)
 
     loadAssets();
 
+    renderer.setupBuffers();
+
     isInitialized = true;
 }
 
@@ -66,7 +68,7 @@ void Engine::init(std::string title, float width, float height)
 void Engine::run()
 {
     if (!isInitialized) {
-        Logger::print("Engine is not initialized!", LOG_ERROR);
+        Logger::print(LOG_ERROR, "Engine is not initialized!");
         return;
     }
 
@@ -107,11 +109,11 @@ void Engine::render()
         meshShader->setMatrix("projection", projection);
         meshShader->setInt("useTex", true);
     } else {
-        Logger::print("Failed to get main shader.", LOG_WARNING);
+        Logger::print(LOG_WARNING, "Failed to get main shader.");
     }
 
     renderer.renderModel(ResourceManager::getShader("mesh"), ResourceManager::getModel("sponza"));
-    renderer.renderText(ResourceManager::getShader("text"), ResourceManager::getFont("font"), "Test", vec2(10, 10), 20, vec3(1, 0, 0));
+    // renderer.renderText(ResourceManager::getShader("text"), ResourceManager::getFont("font"), "Test", vec2(10, 10), 20, vec3(1, 0, 0));
     renderer.renderImGui();
 }
 
@@ -154,7 +156,7 @@ void Engine::loadAssets()
     ResourceManager::loadFont("font", "Tiny5-Regular.ttf", 48);
 
     // models
-    ResourceManager::loadModel("sponza", "sponza/Sponza.gltf", false);
+    ResourceManager::loadModel("sponza", "sponza/Sponza.gltf", renderer);
 }
 
 void Engine::framebufferSizeCallback(GLFWwindow *window, int width, int height)

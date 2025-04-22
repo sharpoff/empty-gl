@@ -21,8 +21,28 @@ enum LogColor {
 class Logger
 {
 public:
-    static void print(std::string_view message, LogType type);
-    static void saveLogToFile(std::string_view filename);
+
+    template<class ...Args>
+    static void print(LogType type, Args ...args)
+    {
+        LogColor color = GRAY;
+        std::string typeName;
+
+        if (type == LOG_WARNING) {
+            color = YELLOW;
+            typeName = "WARNING";
+        } else if (type == LOG_ERROR) {
+            color = RED;
+            typeName = "ERROR";
+        } else if (type == LOG_INFO) {
+            color = GRAY;
+            typeName = "INFO";
+        }
+
+        std::cout << "\033[" << color << "m" << "[" << typeName << "] " << __TIME__ << ": ";
+        (std::cout << ... << args);
+        std::cout << "\033[m" << std::endl;
+    }
 private:
     //static std::vector<std::vector<std::string>> mLogMessages;
 };

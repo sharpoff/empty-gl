@@ -1,20 +1,19 @@
-#version 330 core
+#version 460 core
 
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec2 inUV;
-layout (location = 2) in vec3 inNormals;
-layout (location = 3) in vec3 inColor;
+layout (location = 2) in vec3 inNormal;
 
-uniform mat4 model, view, projection;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
-out vec2 texUV;
-out vec3 normals;
-out vec3 color;
+out vec2 outUV;
+out vec3 outNormal;
 
 void main()
 {
     gl_Position = projection * view * model * vec4(inPosition, 1.0);
-    texUV = inUV;
-    normals = inNormals;
-    color = inColor;
+    outUV = inUV;
+    outNormal = inNormal;
 }
