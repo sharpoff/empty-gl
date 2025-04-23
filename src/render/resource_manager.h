@@ -19,7 +19,7 @@ public:
     static std::map<std::string, Model> models;
     static std::map<std::string, Font> fonts;
 
-    static Shader *loadShader(std::string name, std::string vsPath, std::string fsPath);
+    static Shader *loadShader(std::string name, std::string vsPath, std::string fsPath, bool force = false);
     static Shader *getShader(std::string name);
     static Texture *loadTexture(std::string name, std::string path);
     static Texture *getTexture(std::string name);

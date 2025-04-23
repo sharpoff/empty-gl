@@ -43,7 +43,7 @@ void Renderer::renderMesh(Shader *shader, Mesh mesh)
     }
 
     glActiveTexture(GL_TEXTURE0);
-    mesh.material.diffuse.bind();
+    mesh.material.ambient.bind();
     shader->setInt("material.ambient", 0);
 
     glActiveTexture(GL_TEXTURE1);
@@ -64,6 +64,8 @@ void Renderer::renderModel(Shader *shader, Model *model)
         Logger::print(LOG_WARNING, "Failed to render model.");
         return;
     }
+
+    // model->modelMatrix *= model->transform.getModelMatrix();
 
     shader->use();
     shader->setMatrix("model", model->modelMatrix);
@@ -95,8 +97,8 @@ void Renderer::renderText(Shader *shader, Font *font, std::string text, vec2 pos
 
     for (auto &newIndex : newIndices) {
         newIndex += vertexOffset;
+        indices.push_back(newIndex);
     }
-    indices.insert(indices.end(), newIndices.begin(), newIndices.end());
 
     uint32_t indexCount = newIndices.size();
 
@@ -124,6 +126,9 @@ void Renderer::renderText(Shader *shader, Font *font, std::string text, vec2 pos
             {{pos.x + size.x, pos.y + size.y, 0.0f},  {1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
         };
         glBindTexture(GL_TEXTURE_2D, ch.textureID);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices.data());
 
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, (void*)(indexOffset * sizeof(GLuint)));
 

@@ -6,12 +6,14 @@ std::map<std::string, Texture> ResourceManager::textures;
 std::map<std::string, Model> ResourceManager::models;
 std::map<std::string, Font> ResourceManager::fonts;
 
-Shader *ResourceManager::loadShader(std::string name, std::string vertexPath, std::string fragmentPath)
+Shader *ResourceManager::loadShader(std::string name, std::string vertexPath, std::string fragmentPath, bool force)
 {
     vertexPath = std::filesystem::path("res/shaders") / vertexPath;
     fragmentPath = std::filesystem::path("res/shaders") / fragmentPath;
 
-    if (ResourceManager::shaders.find(name) != ResourceManager::shaders.end())
+    Logger::print(LOG_INFO, "Loading shader ", name);
+
+    if (!force && ResourceManager::shaders.find(name) != ResourceManager::shaders.end())
         return &ResourceManager::shaders[name];
 
     // TODO: add support for different shaders, not only vertex and fragment
@@ -58,7 +60,7 @@ Texture *ResourceManager::getTexture(std::string name)
         return &ResourceManager::textures[name];
     }
     else {
-        Logger::print(LOG_WARNING, "Couldn't find texture ", name);
+        Logger::print(LOG_WARNING, "Failed to find texture ", name);
         return nullptr;
     }
 }
@@ -87,7 +89,7 @@ Model *ResourceManager::getModel(std::string name)
         return &ResourceManager::models[name];
     }
     else {
-        Logger::print(LOG_WARNING, "Couldn't find model ", name);
+        Logger::print(LOG_WARNING, "Failed to find model ", name);
         return nullptr;
     }
 }
@@ -116,7 +118,7 @@ Font *ResourceManager::getFont(std::string name)
         return &ResourceManager::fonts[name];
     }
     else {
-        Logger::print(LOG_WARNING, "Couldn't find font ", name);
+        Logger::print(LOG_WARNING, "Failed to find font ", name);
         return nullptr;
     }
 }

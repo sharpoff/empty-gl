@@ -20,7 +20,7 @@ void Transform::scale(vec3 scale)
     mScale *= scale;
 }
 
-void Transform::setPosition(vec3 position)
+void Transform::setTranslation(vec3 position)
 {
     mTranslation = position;
 }

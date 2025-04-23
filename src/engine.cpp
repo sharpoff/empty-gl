@@ -40,24 +40,12 @@ void Engine::init(std::string title, float width, float height)
 
     glfwSetWindowUserPointer(window, static_cast<void *>(this));
 
-    std::vector<int> keys = {
-        GLFW_KEY_ESCAPE,
-        GLFW_KEY_E,
-        GLFW_KEY_A,
-        GLFW_KEY_D,
-        GLFW_KEY_S,
-        GLFW_KEY_W,
-        GLFW_KEY_LEFT_SHIFT,
-        GLFW_KEY_SPACE,
-    };
-
-    Input::getSingleton()->registerKeys(keys);
     Input::getSingleton()->setCallbacks(window);
 
     // load renderer and models textures and so forth
     renderer.init(window);
 
-    loadAssets();
+    loadResources();
 
     renderer.setupBuffers();
 
@@ -103,17 +91,27 @@ void Engine::render()
     glm::mat4 view = camera.getViewMatrix();
     glm::mat4 projection = glm::perspective(glm::radians(60.0f), width / float(height), 0.1f, 100.0f);
 
-    if (auto meshShader = ResourceManager::getShader("mesh"); meshShader != nullptr) {
-        meshShader->use();
-        meshShader->setMatrix("view", view);
-        meshShader->setMatrix("projection", projection);
-        meshShader->setInt("useTex", true);
-    } else {
-        Logger::print(LOG_WARNING, "Failed to get main shader.");
+    // meshes with textures and lighting
+    if (auto shader = ResourceManager::getShader("mesh"); shader != nullptr) {
+        shader->use();
+        shader->setMatrix("view", view);
+        shader->setMatrix("projection", projection);
+        shader->setVector("light.pos", light.pos);
+        shader->setVector("light.color", light.color);
+
+        renderer.renderModel(shader, ResourceManager::getModel("sponza"));
+
+        auto lightModel = ResourceManager::getModel("cube");
+        lightModel->transform.setTranslation(light.pos);
+        lightModel->transform.setScale(vec3(0.2));
+        lightModel->modelMatrix = lightModel->transform.getModelMatrix();
+
+        renderer.renderModel(shader, lightModel);
     }
 
-    renderer.renderModel(ResourceManager::getShader("mesh"), ResourceManager::getModel("sponza"));
-    // renderer.renderText(ResourceManager::getShader("text"), ResourceManager::getFont("font"), "Test", vec2(10, 10), 20, vec3(1, 0, 0));
+    // TODO: not working
+    // renderer.renderText(ResourceManager::getShader("text"), ResourceManager::getFont("font"), "Test", vec2(10, 10), 1.0, vec3(1, 0, 0));
+
     renderer.renderImGui();
 }
 
@@ -139,24 +137,34 @@ void Engine::updateInput(double dt)
     if (input->isKeyPressed(GLFW_KEY_ESCAPE)) {
         glfwSetWindowShouldClose(window, true);
     }
+    if (input->isKeyPressed(GLFW_KEY_R)) {
+        loadShaders(true);
+    }
 
     camera.update(dt);
-
-    // update previous input state
     input->update();
 }
 
-void Engine::loadAssets()
+void Engine::loadResources()
 {
     // shaders
-    ResourceManager::loadShader("mesh", "mesh.vert", "mesh.frag");
-    ResourceManager::loadShader("text", "text.vert", "text.frag");
+    loadShaders(false);
 
     // fonts
     ResourceManager::loadFont("font", "Tiny5-Regular.ttf", 48);
 
     // models
     ResourceManager::loadModel("sponza", "sponza/Sponza.gltf", renderer);
+    ResourceManager::loadModel("cube", "primitives/cube.glb", renderer);
+
+    light = {vec3(0.0, 4.0, 0.0), vec3(1.0)};
+}
+
+void Engine::loadShaders(bool reload)
+{
+    ResourceManager::loadShader("mesh", "mesh.vert", "mesh.frag", reload);
+    ResourceManager::loadShader("color", "color.vert", "color.frag", reload);
+    ResourceManager::loadShader("text", "text.vert", "text.frag", reload);
 }
 
 void Engine::framebufferSizeCallback(GLFWwindow *window, int width, int height)

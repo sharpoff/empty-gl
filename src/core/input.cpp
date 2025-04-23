@@ -16,12 +16,6 @@ Input *Input::getSingleton()
     return singletonInstance;
 }
 
-void Input::registerKeys(std::vector<int> keys) {
-    for (const int &key : keys) {
-        currentKeyState[key] = false;
-    }
-}
-
 void Input::update()
 {
     previousKeyState = currentKeyState;
@@ -40,9 +34,7 @@ bool Input::isKeyPressed(int key)
 
 void Input::setKey(int key, bool state)
 {
-    if (currentKeyState.find(key) != currentKeyState.end()) {
-        currentKeyState[key] = state;
-    }
+    currentKeyState[key] = state;
 }
 
 void Input::setCallbacks(GLFWwindow *window)

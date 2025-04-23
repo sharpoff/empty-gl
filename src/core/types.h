@@ -22,3 +22,9 @@ struct Mesh
     uint32_t indexOffset;
     uint32_t indexCount;
 };
+
+struct Light
+{
+    vec3 pos;
+    vec3 color;
+};

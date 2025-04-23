@@ -28,7 +28,8 @@ private:
     void destroy();
     void updateInput(double dt);
 
-    void loadAssets();
+    void loadResources();
+    void loadShaders(bool reload = false);
 
     static void framebufferSizeCallback(GLFWwindow *window, int width, int height);
     static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
@@ -38,6 +39,8 @@ private:
 
     Renderer renderer;
     Camera camera;
+
+    Light light;
 
     bool isInitialized = false;
 };

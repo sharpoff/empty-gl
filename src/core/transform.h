@@ -10,7 +10,7 @@ public:
     void rotate(quat rotation);
     void scale(vec3 scale);
 
-    void setPosition(vec3 position);
+    void setTranslation(vec3 position);
     void setRotation(float angle, vec3 axis);
     void setRotation(quat rotation);
     void setScale(vec3 scale);
