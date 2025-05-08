@@ -5,9 +5,9 @@
 
 struct Material
 {
-    Texture ambient;
     Texture diffuse;
     Texture specular;
+    Texture emissive;
 };
 
 struct Vertex {
@@ -25,6 +25,8 @@ struct Mesh
 
 struct Light
 {
-    vec3 pos;
-    vec3 color;
+    vec3 pos = vec3(0.0);
+    vec3 color = vec3(1.0);
+
+    vec2 size = vec2(0.2); // billboard size
 };

@@ -1,7 +1,5 @@
 # Empty OpenGL Renderer
 
-* Renderer that i created following [LearnOpenGL](https://learnopengl.com) to learn myself OpenGL.
-
 ![Sponza](screenshots/sponza.png)
 
 ## Build
@@ -19,7 +17,14 @@ Build and run in debug:
 ./run.sh
 ```
 
-# Features
+## Features
+
 * Model loading using Assimp library
-* Phong lighting
+* Blinn-Phong lighting
 * Text rendering using Freetype library
+* Billboarding
+* Dear ImGui integration
+
+## Learning resources
+
+* [LearnOpenGL](https://learnopengl.com)

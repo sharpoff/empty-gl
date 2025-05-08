@@ -1,8 +1,6 @@
 #pragma once
 
-#include <iostream>
 #include <string>
-#include <map>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -24,6 +22,7 @@ public:
     void run();
 private:
     void render();
+    void renderImGui();
     void update();
     void destroy();
     void updateInput(double dt);
@@ -42,5 +41,18 @@ private:
 
     Light light;
 
+    // cacodemon(DOOM) billboard
+    struct Cacodemon {
+        vec3 pos = vec3(0.0, 2.0, 0.0);
+        vec3 color = vec3(1.0);
+        vec2 size = vec2(0.2);
+    } cacodemon;
+
     bool isInitialized = false;
+
+    bool multisampling = true;
+    bool wireframe = false;
+
+    double fpsCount{0.0}, msCount{0.0};
+    uint32_t numFrames{0};
 };

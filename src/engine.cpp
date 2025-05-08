@@ -1,4 +1,5 @@
 #include <engine.h>
+#include "render/utils.h"
 
 void Engine::init(std::string title, float width, float height)
 {
@@ -15,8 +16,7 @@ void Engine::init(std::string title, float width, float height)
 
     // glfw window creation
     window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
-    if (window == NULL)
-    {
+    if (window == NULL) {
         Logger::print(LOG_ERROR, "Failed to create GLFW window");
         glfwTerminate();
         exit(EXIT_FAILURE);
@@ -28,8 +28,7 @@ void Engine::init(std::string title, float width, float height)
 
     // glew initialization
     GLenum err = glewInit();
-    if (GLEW_OK != err)
-    {
+    if (GLEW_OK != err) {
         Logger::print(LOG_ERROR, "Failed to initialize GLEW");
         exit(EXIT_FAILURE);
     }
@@ -42,12 +41,12 @@ void Engine::init(std::string title, float width, float height)
 
     Input::getSingleton()->setCallbacks(window);
 
-    // load renderer and models textures and so forth
     renderer.init(window);
-
     loadResources();
-
     renderer.setupBuffers();
+
+    camera.setPosition(vec3(0.0, 3.0, 0.0));
+    light.pos = vec3(-4.0, 3.0, 0.0);
 
     isInitialized = true;
 }
@@ -91,28 +90,74 @@ void Engine::render()
     glm::mat4 view = camera.getViewMatrix();
     glm::mat4 projection = glm::perspective(glm::radians(60.0f), width / float(height), 0.1f, 100.0f);
 
+    // TODO: create array of lights
+    // TODO: make textures bindless
     // meshes with textures and lighting
+    beginDebugGroup("Meshes", 0);
     if (auto shader = ResourceManager::getShader("mesh"); shader != nullptr) {
         shader->use();
         shader->setMatrix("view", view);
         shader->setMatrix("projection", projection);
+        shader->setVector("cameraPos", camera.getPosition());
         shader->setVector("light.pos", light.pos);
         shader->setVector("light.color", light.color);
 
         renderer.renderModel(shader, ResourceManager::getModel("sponza"));
+    }
+    endDebugGroup();
 
-        auto lightModel = ResourceManager::getModel("cube");
-        lightModel->transform.setTranslation(light.pos);
-        lightModel->transform.setScale(vec3(0.2));
-        lightModel->modelMatrix = lightModel->transform.getModelMatrix();
+    if (auto shader = ResourceManager::getShader("billboard"); shader != nullptr) {
+        // light
+        renderer.renderBillboard(shader, view, projection, light.pos, nullptr, light.color, light.size);
 
-        renderer.renderModel(shader, lightModel);
+        // cacodemon
+        auto cacodemonTexture = ResourceManager::getTexture("cacodemon");
+        renderer.renderBillboard(shader, view, projection, cacodemon.pos, cacodemonTexture, cacodemon.color, cacodemon.size);
     }
 
-    // TODO: not working
-    // renderer.renderText(ResourceManager::getShader("text"), ResourceManager::getFont("font"), "Test", vec2(10, 10), 1.0, vec3(1, 0, 0));
+    mat4 orthoProjection = glm::ortho(0.0f, float(width), 0.0f, float(height));
+    ResourceManager::getShader("text")->use();
+    ResourceManager::getShader("text")->setMatrix("projection", orthoProjection);
+    renderer.renderText(ResourceManager::getShader("text"), ResourceManager::getFont("font"), "Text!", vec2(100, 100), 1.0, vec3(1.0f));
 
-    renderer.renderImGui();
+    renderImGui();
+}
+
+void Engine::renderImGui()
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::ShowDemoWindow();
+
+    {
+        ImGui::Begin("Stats");
+
+        ImGui::Checkbox("Multisampling", &multisampling);
+        ImGui::Checkbox("Wireframe", &wireframe);
+
+        ImGui::Text("%.1f FPS (%.1f ms)", fpsCount, msCount);
+        ImGui::End();
+    }
+
+    {
+        ImGui::Begin("Light");
+        ImGui::DragFloat3("Position", &light.pos[0], 1.0, -100.0f, 100.0f);
+        ImGui::ColorEdit3("Color", &light.color[0]);
+        ImGui::DragFloat2("Size", &light.size[0], 0.05, 0.0, 2.0);
+        ImGui::End();
+    }
+
+    {
+        ImGui::Begin("Cacodemon");
+        ImGui::DragFloat3("Position", &cacodemon.pos[0], 1.0, -100.0f, 100.0f);
+        ImGui::ColorEdit3("Color", &cacodemon.color[0]);
+        ImGui::DragFloat2("Size", &cacodemon.size[0], 0.05, 0.0, 2.0);
+        ImGui::End();
+    }
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void Engine::update()
@@ -123,14 +168,37 @@ void Engine::update()
     double deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
-    camera.update(deltaTime);
-    renderer.update();
+    // set state based on settings
+    if (multisampling) {
+        glEnable(GL_MULTISAMPLE);  
+    } else {
+        glDisable(GL_MULTISAMPLE);  
+    }
+    if (wireframe) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    } else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
+    // set fps
+    float currentTime = glfwGetTime();
+    static float lastTime = glfwGetTime();
+    float elapsedTime = currentTime - lastTime;
+    if (elapsedTime > 0.25) {
+        lastTime = currentTime;
+        fpsCount = numFrames / elapsedTime;
+        msCount = elapsedTime / numFrames * 1000;
+        numFrames = 0;
+    }
+    numFrames++;
 
     updateInput(deltaTime);
 }
 
 void Engine::updateInput(double dt)
 {
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+
     Input *input = Input::getSingleton();
 
     // input update
@@ -151,11 +219,13 @@ void Engine::loadResources()
     loadShaders(false);
 
     // fonts
-    ResourceManager::loadFont("font", "Tiny5-Regular.ttf", 48);
+    ResourceManager::loadFont("font", "Roboto-Regular.ttf", 48);
 
     // models
     ResourceManager::loadModel("sponza", "sponza/Sponza.gltf", renderer);
-    ResourceManager::loadModel("cube", "primitives/cube.glb", renderer);
+
+    // textures
+    ResourceManager::loadTexture("cacodemon", "cacodemon.png");
 
     light = {vec3(0.0, 4.0, 0.0), vec3(1.0)};
 }
@@ -163,8 +233,9 @@ void Engine::loadResources()
 void Engine::loadShaders(bool reload)
 {
     ResourceManager::loadShader("mesh", "mesh.vert", "mesh.frag", reload);
-    ResourceManager::loadShader("color", "color.vert", "color.frag", reload);
     ResourceManager::loadShader("text", "text.vert", "text.frag", reload);
+    ResourceManager::loadShader("solid", "solid.vert", "solid.frag", reload);
+    ResourceManager::loadShader("billboard", "billboard.vert", "billboard.frag", reload);
 }
 
 void Engine::framebufferSizeCallback(GLFWwindow *window, int width, int height)
@@ -174,7 +245,8 @@ void Engine::framebufferSizeCallback(GLFWwindow *window, int width, int height)
 
 void Engine::mouseCallback(GLFWwindow *window, double xPos, double yPos)
 {
-    Engine *engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
-
-    engine->camera.updateRotation(xPos, yPos);
+    if (!ImGui::GetIO().WantCaptureMouse) {
+        Engine *engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
+        engine->camera.updateRotation(xPos, yPos);
+    }
 }

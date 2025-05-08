@@ -20,18 +20,12 @@ struct Character {
 class Font
 {
 public:
-    void loadFromFile(std::string font, unsigned int fontSize);
-    bool isLoaded();
-    void destroy();
+    bool loadFromFile(std::string font, unsigned int fontSize);
 
     std::map<char, Character> characters;
 private:
-    void loadCharacters();
-
     FT_Library ftLib;
     FT_Face ftFace;
-    bool loaded;
-
 };
 
 #endif

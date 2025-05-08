@@ -1,11 +1,9 @@
 #pragma once
 
-#include <iostream>
 #include <filesystem>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-#include <algorithm>
 #include <map>
 #include <core/transform.h>
 #include <core/math.h>
@@ -16,8 +14,7 @@ class Model
 public:
     friend class Renderer;
 
-    bool isLoaded();
-    void loadFromFile(std::filesystem::path path, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
+    bool loadFromFile(std::filesystem::path path, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
     void processNode(const aiScene *aScene, const aiNode *aNode, std::filesystem::path directory, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
     Mesh processMesh(const aiScene *aiScene, const aiMesh *aiMesh, std::filesystem::path directory, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
 
@@ -28,6 +25,5 @@ private:
     mat4 convertMatrix4(const aiMatrix4x4 &m);
 
     std::vector<Mesh> meshes;
-    std::map<std::string, Texture> textureCache;
-    bool loaded;
+    std::map<std::string, Texture> textures;
 };

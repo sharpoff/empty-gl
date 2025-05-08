@@ -6,34 +6,27 @@ void Renderer::init(GLFWwindow *window)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
+    // quad primitive
+    quadIndexOffset = indices.size();
+    quadVertexOffset = vertices.size();
+
+    vertices.push_back({{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
+    vertices.push_back({{-1.0f, 1.0f, 0.0f},  {0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}});
+    vertices.push_back({{1.0f, 1.0f, 0.0f},   {1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}});
+    vertices.push_back({{1.0f, -1.0f, 0.0f},  {1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
+
+    std::vector<uint32_t> newIndices = {
+        0, 1, 2,
+        2, 3, 0,
+    };
+
+    for (auto &newIndex : newIndices) {
+        newIndex += quadVertexOffset;
+        indices.push_back(newIndex);
+    }
+    quadIndexCount = newIndices.size();
+
     initGui(window);
-}
-
-void Renderer::update()
-{
-    // set state based on settings
-    if (multisampling) {
-        glEnable(GL_MULTISAMPLE);  
-    } else {
-        glDisable(GL_MULTISAMPLE);  
-    }
-    if (wireframe) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    } else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
-    // set fps
-    float currentTime = glfwGetTime();
-    static float lastTime = glfwGetTime();
-    float elapsedTime = currentTime - lastTime;
-    if (elapsedTime > 0.25) {
-        lastTime = currentTime;
-        fpsCount = numFrames / elapsedTime;
-        msCount = elapsedTime / numFrames * 1000;
-        numFrames = 0;
-    }
-    numFrames++;
 }
 
 void Renderer::renderMesh(Shader *shader, Mesh mesh)
@@ -43,16 +36,16 @@ void Renderer::renderMesh(Shader *shader, Mesh mesh)
     }
 
     glActiveTexture(GL_TEXTURE0);
-    mesh.material.ambient.bind();
-    shader->setInt("material.ambient", 0);
+    mesh.material.diffuse.bind();
+    shader->setInt("material.diffuse", 0);
 
     glActiveTexture(GL_TEXTURE1);
-    mesh.material.diffuse.bind();
-    shader->setInt("material.diffuse", 1);
+    mesh.material.specular.bind();
+    shader->setInt("material.specular", 1);
 
     glActiveTexture(GL_TEXTURE2);
-    mesh.material.specular.bind();
-    shader->setInt("material.specular", 2);
+    mesh.material.emissive.bind();
+    shader->setInt("material.emissive", 2);
 
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, (void*)(mesh.indexOffset * sizeof(GLuint)));
@@ -65,42 +58,22 @@ void Renderer::renderModel(Shader *shader, Model *model)
         return;
     }
 
-    // model->modelMatrix *= model->transform.getModelMatrix();
-
     shader->use();
     shader->setMatrix("model", model->modelMatrix);
 
-    for (unsigned int i = 0; i < model->meshes.size(); i++) {
+    for (unsigned int i = 0; i < model->meshes.size(); i++)
         renderMesh(shader, model->meshes[i]);
-    }
 }
 
 void Renderer::renderText(Shader *shader, Font *font, std::string text, vec2 position, float scale, vec3 color)
 {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     if (!shader || !font) {
         Logger::print(LOG_WARNING, "Failed to render text.");
         return;
     }
-
-    uint32_t indexOffset = indices.size();
-    uint32_t vertexOffset = vertices.size();
-
-    vertices.push_back({{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}});
-    vertices.push_back({{-1.0f, 1.0f, 0.0f},  {0.0f, 1.0f}, {0.0f, 0.0f, -1.0f}});
-    vertices.push_back({{1.0f, 1.0f, 0.0f},   {1.0f, 1.0f}, {0.0f, 0.0f, -1.0f}});
-    vertices.push_back({{1.0f, -1.0f, 0.0f},  {1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}});
-
-    std::vector<uint32_t> newIndices = std::vector<uint32_t> {
-        0, 1, 2,
-        2, 3, 0,
-    };
-
-    for (auto &newIndex : newIndices) {
-        newIndex += vertexOffset;
-        indices.push_back(newIndex);
-    }
-
-    uint32_t indexCount = newIndices.size();
 
     shader->use();
     shader->setVector("textColor", color);
@@ -119,21 +92,58 @@ void Renderer::renderText(Shader *shader, Font *font, std::string text, vec2 pos
         size.x = ch.size.x * scale;
         size.y = ch.size.y * scale;
 
-        vertices = std::vector<Vertex> {
-            {{pos.x, pos.y + size.y, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
-            {{pos.x, pos.y, 0.0f},  {0.0f, 1.0f}, {0.0f, 0.0f, -1.0f}},
-            {{pos.x + size.x, pos.y, 0.0f},   {1.0f, 1.0f}, {0.0f, 0.0f, -1.0f}},
-            {{pos.x + size.x, pos.y + size.y, 0.0f},  {1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+        // change quad
+        std::vector<Vertex> vert = {
+            {{pos.x, pos.y + size.y, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
+            {{pos.x, pos.y, 0.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}},
+            {{pos.x + size.x, pos.y, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}},
+            {{pos.x + size.x, pos.y + size.y, 0.0f},  {1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
         };
-        glBindTexture(GL_TEXTURE_2D, ch.textureID);
-
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices.data());
+        glBufferSubData(GL_ARRAY_BUFFER, quadVertexOffset, vert.size() * sizeof(Vertex), vert.data());
 
-        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, (void*)(indexOffset * sizeof(GLuint)));
+        // draw quad
+        glBindTexture(GL_TEXTURE_2D, ch.textureID);
+        glDrawElements(GL_TRIANGLES, quadIndexCount, GL_UNSIGNED_INT, (void*)(quadIndexOffset * sizeof(GLuint)));
 
         position.x += (ch.advance >> 6) * scale;
     }
+}
+
+void Renderer::renderBillboard(Shader *shader, mat4 view, mat4 projection, vec3 position, Texture *texture, vec3 color, vec2 size)
+{
+    glDisable(GL_CULL_FACE);
+    glBindVertexArray(VAO);
+
+    vec3 cameraRight = vec3(view[0][0], view[1][0], view[2][0]);
+    vec3 cameraUp = vec3(view[0][1], view[1][1], view[2][1]);
+    mat4 viewProj = projection * view;
+
+    shader->use();
+    shader->setMatrix("viewProj", viewProj);
+    shader->setVector("cameraRight", cameraRight);
+    shader->setVector("cameraUp", cameraUp);
+    shader->setVector("center", position);
+    shader->setVector("color", color);
+    shader->setVector("size", size);
+    if (texture) {
+        shader->setInt("useTexture", true);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture->ID);
+    }
+
+    // change vertices
+    std::vector<Vertex> vert = {
+        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
+        {{-1.0f, 1.0f, 0.0f},  {0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}},
+        {{1.0f, 1.0f, 0.0f},   {1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}},
+        {{1.0f, -1.0f, 0.0f},  {1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferSubData(GL_ARRAY_BUFFER, quadVertexOffset, vert.size() * sizeof(Vertex), vert.data());
+
+    // draw quad
+    glDrawElements(GL_TRIANGLES, quadIndexCount, GL_UNSIGNED_INT, (void*)(quadIndexOffset * sizeof(GLuint)));
 }
 
 void Renderer::initGui(GLFWwindow *window)
@@ -145,29 +155,6 @@ void Renderer::initGui(GLFWwindow *window)
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
-}
-
-void Renderer::renderImGui()
-{
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::ShowDemoWindow();
-
-    // Debugging window
-    {
-        ImGui::Begin("Debug");
-        // ImGuiIO& io = ImGui::GetIO();
-
-        ImGui::Checkbox("Multisampling", &multisampling);
-        ImGui::Checkbox("Wireframe", &wireframe);
-
-        ImGui::Text("%.1f FPS (%.1f ms)", fpsCount, msCount);
-        ImGui::End();
-    }
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void Renderer::setupBuffers()
@@ -187,7 +174,7 @@ void Renderer::setupBuffers()
 
     // set vertex attributes
     if (vertices.empty()) {
-        Logger::print(LOG_WARNING, "Vertices vector is empty, can't set attributes!");
+        Logger::print(LOG_WARNING, "No vertices, can't set attributes!");
         return;
     }
     glEnableVertexAttribArray(0);

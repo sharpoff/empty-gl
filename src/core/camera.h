@@ -1,7 +1,6 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
-#include <map>
 
 #include <core/math.h>
 
@@ -16,7 +15,7 @@ public:
     void setMovementSpeed(float speed);
     void setRotationSpeed(float speed);
 
-    vec3 getPosition();
+    vec3 &getPosition();
 
     void updateRotation(double xPos, double yPos);
     void updatePosition(double dt);
@@ -26,7 +25,7 @@ private:
     float pitch = 0.0f;
     float yaw = 0.0f;
 
-    float movementSpeed = 0.5;
+    float movementSpeed = 1.5;
     float rotationSpeed = 0.01;
 
     vec2 previousMousePos = vec2(0);

@@ -49,7 +49,7 @@ void Camera::setRotationSpeed(float speed)
     this->rotationSpeed = speed;
 }
 
-vec3 Camera::getPosition()
+vec3 &Camera::getPosition()
 {
     return position;
 }
@@ -79,4 +79,6 @@ void Camera::updatePosition(double dt)
     vec2 cameraMotion = vec2(input->isKeyPressed(GLFW_KEY_W), input->isKeyPressed(GLFW_KEY_D)) - vec2(input->isKeyPressed(GLFW_KEY_S), input->isKeyPressed(GLFW_KEY_A));
 
     velocity = vec3(cameraMotion.y, 0.0, -cameraMotion.x);
+
+    velocity.y = input->isKeyPressed(GLFW_KEY_SPACE) ? 1.0 : -input->isKeyPressed(GLFW_KEY_LEFT_CONTROL);
 }

@@ -1,36 +1,17 @@
 #include <render/font.h>
 
-void Font::destroy()
+bool Font::loadFromFile(std::string font, unsigned int fontSize)
 {
-    FT_Done_Face(ftFace);
-    FT_Done_FreeType(ftLib);
-}
+    if (FT_Init_FreeType(&ftLib))
+        return false;
 
-void Font::loadFromFile(std::string font, unsigned int fontSize)
-{
-    // Create library
-    if (FT_Init_FreeType(&ftLib)) {
-        Logger::print(LOG_WARNING, "Failed to initialize FreeType.");
-        loaded = false;
-        return;
-    }
-
-    // Load Font face
-    if (FT_New_Face(ftLib, font.c_str(), 0, &ftFace)) {
-        Logger::print(LOG_WARNING, "Failed to load font");
-        loaded = false;
-        return;
-    }
+    if (FT_New_Face(ftLib, font.c_str(), 0, &ftFace))
+        return false;
 
     FT_Set_Pixel_Sizes(ftFace, 0, fontSize);
 
-    loadCharacters();
-}
-
-void Font::loadCharacters()
-{
+    // load ascii characters
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
-    
     for (unsigned char ch = 0; ch < 128; ch++) {
         if (FT_Load_Char(ftFace, ch, FT_LOAD_RENDER)) {
             Logger::print(LOG_WARNING, "Failed to load glyph for char '", ch, "'");
@@ -55,14 +36,9 @@ void Font::loadCharacters()
         };
         characters[ch] = character;
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
 
-    destroy();
+    FT_Done_Face(ftFace);
+    FT_Done_FreeType(ftLib);
 
-    loaded = true;
-}
-
-bool Font::isLoaded()
-{
-    return loaded;
+    return true;
 }

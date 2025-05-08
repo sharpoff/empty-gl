@@ -3,9 +3,6 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <string>
-#include <iostream>
-#include <fstream>
-#include <sstream>
 
 #include <core/logger.h>
 
@@ -14,8 +11,7 @@ class Shader
 public:
     uint32_t ID;
 
-    void compile(std::string vertexPath, std::string fragmentPath);
-    bool isLoaded();
+    bool compile(std::string vertexPath, std::string fragmentPath);
     Shader use();
 
     void setInt(std::string name, int value);
@@ -27,7 +23,5 @@ public:
     void setMatrix(std::string name, glm::mat4 &value);
     void destroy();
 private:
-    bool loaded = false;
-
     bool checkForErrors(unsigned int shader, std::string type);
 };

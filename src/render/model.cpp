@@ -1,12 +1,7 @@
 #include <render/model.h>
 #include <assimp/postprocess.h>
 
-bool Model::isLoaded()
-{
-    return loaded;
-}
-
-void Model::loadFromFile(std::filesystem::path path, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
+bool Model::loadFromFile(std::filesystem::path path, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
 {
     Assimp::Importer importer;
 
@@ -15,13 +10,13 @@ void Model::loadFromFile(std::filesystem::path path, std::vector<Vertex> &vertic
 
     if (aScene == nullptr) {
         Logger::print(LOG_WARNING, "Failed to load model ", path, ": ", importer.GetErrorString());
-        return;
+        return false;
     }
 
     std::string directory = std::filesystem::path(path).parent_path();
     processNode(aScene, aScene->mRootNode, directory, vertices, indices);
 
-    loaded = true;
+    return true;
 }
 
 void Model::processNode(const aiScene *aScene, const aiNode *aNode, std::filesystem::path directory, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
@@ -81,10 +76,9 @@ Mesh Model::processMesh(const aiScene *aiScene, const aiMesh *aiMesh, std::files
     if (aiMesh->mMaterialIndex >= 0) {
         const aiMaterial *aMaterial = aiScene->mMaterials[aiMesh->mMaterialIndex];
 
-        mesh.material.ambient = loadMaterialTexture(aMaterial, aiTextureType_AMBIENT, 0, directory);
         mesh.material.diffuse = loadMaterialTexture(aMaterial, aiTextureType_DIFFUSE, 0, directory);
         mesh.material.specular = loadMaterialTexture(aMaterial, aiTextureType_SPECULAR, 0, directory);
-
+        mesh.material.emissive = loadMaterialTexture(aMaterial, aiTextureType_EMISSIVE, 0, directory);
     }
 
     mesh.indexOffset = indexOffset;
@@ -101,13 +95,13 @@ Texture Model::loadMaterialTexture(const aiMaterial *aMaterial, aiTextureType ty
     if (aMaterial->Get(AI_MATKEY_TEXTURE(type, index), texturePath) == AI_SUCCESS) {
         std::filesystem::path fullTexturePath = directory / std::filesystem::path(texturePath.data);
 
-        if (textureCache.find(fullTexturePath) == textureCache.end()) {
+        if (textures.find(fullTexturePath) == textures.end()) {
             Logger::print(LOG_INFO, "Loading texture: ", fullTexturePath);
 
             texture.loadFromFile(fullTexturePath);
-            textureCache[fullTexturePath] = texture;
+            textures[fullTexturePath] = texture;
         } else {
-            texture = textureCache[fullTexturePath];
+            texture = textures[fullTexturePath];
         }
     }
 
